@@ -1,0 +1,28 @@
+{
+    "name": "chinthakagodawita/codeception-timekeeper",
+    "description": "A Codeception extension & Robo task that records test runtimes and lets you split tests into equal runtime-based groups for parallel runs",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Chinthaka Godawita",
+            "email": "chin.godawita@me.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "ChinthakaGodawita\\CodeceptionTimekeeper\\": "src"
+        }
+    },
+    "require": {
+        "php": ">=7.2",
+        "ext-json": "*",
+        "codeception/codeception": "^3.1||^4.1"
+    },
+    "require-dev": {
+        "consolidation/robo": "^2.1"
+    },
+    "suggest": {
+        "consolidation/robo": "For time-based test splitting and parallel test run support."
+    }
+}

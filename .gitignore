@@ -1,0 +1,5 @@
+# Depedencies.
+/vendor/
+
+# IDE cruft.
+.idea/
