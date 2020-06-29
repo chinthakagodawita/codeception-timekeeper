@@ -20,7 +20,7 @@
         "codeception/codeception": "^3.1||^4.1"
     },
     "require-dev": {
-        "consolidation/robo": "^2.1"
+        "consolidation/robo": "^1.0||^2.1"
     },
     "suggest": {
         "consolidation/robo": "For time-based test splitting and parallel test run support."
