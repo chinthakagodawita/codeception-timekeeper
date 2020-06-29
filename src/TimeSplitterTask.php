@@ -130,9 +130,6 @@ class TimeSplitterTask extends BaseTask
 
     private function splitTestsByRuntime(Generator $tests, TimeReport $timeReport): array
     {
-        $totalRuntime = $timeReport->totalRuntime();
-        $avgRuntime = $totalRuntime / $this->groupCount;
-
         $skippedTests = [];
         $testsWithRuntime = [];
         $testsWithoutRuntime = [];
@@ -151,31 +148,41 @@ class TimeSplitterTask extends BaseTask
             }
         }
 
+        // Reverse sort, the larger runtimes are hard to fit than the smaller
+        // ones, so lets get them out of the way first.
         arsort($testsWithRuntime);
 
         $sums = array_fill(0, $this->groupCount, 0);
         $groups = array_fill(0, $this->groupCount, []);
 
-        $addedOne = false;
+        $maxLoops = 3 * $this->groupCount;
         foreach ($testsWithRuntime as $testPath => $runtime) {
-            $added = false;
-            $idx = null;
-            foreach ($sums as $idx => $sum) {
-                if (($sum + $runtime) < $avgRuntime || !$addedOne) {
+            $idx = 0;
+            $loops = 0;
+            while(true) {
+                if ($loops > $maxLoops) {
+                    throw new TaskException(
+                        $this,
+                        "Max loop count ({$maxLoops}) reached."
+                    );
+                }
+
+                $sum = $sums[$idx];
+                $prevIdx = $idx - 1;
+                if ($prevIdx < 0) {
+                    $prevIdx = $this->groupCount - 1;
+                }
+                $nextIdx = $idx + 1;
+                if ($nextIdx === $this->groupCount) {
+                    $nextIdx = 0;
+                }
+                if ($sum === 0 || ($sum < $sums[$prevIdx] && $sum < $sums[$nextIdx])) {
+                    $sums[$idx] += $runtime;
                     $groups[$idx][] = $testPath;
-                    $sum += $runtime;
-                    $sums[$idx] = $sum;
-                    $addedOne = true;
-                    $added = true;
                     break;
                 }
-            }
-            if (!$added) {
-                if ($idx === null) {
-                    $idx = $this->groupCount - 1;
-                }
-                $groups[$idx][] = $testPath;
-                $sums[$idx] += $runtime;
+                $idx++;
+                $loops++;
             }
         }
 
@@ -190,6 +197,8 @@ class TimeSplitterTask extends BaseTask
             }
         }
 
+        // Add skipped tests onto the last group as they take relatively no time
+        // to run.
         $maxGroupIdx = $this->groupCount - 1;
         if (count($skippedTests) > 0) {
             $groups[$maxGroupIdx] = array_merge($groups[$maxGroupIdx], $skippedTests);
