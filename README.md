@@ -1,6 +1,8 @@
 # Codeception TimeKeeper
 
-A [Codeception](https://codeception.com/) extension & [Robo](https://robo.li) task that records test runtimes and lets you split tests into equal runtime-based groups for parallel runs
+A [Codeception](https://codeception.com/) extension & [Robo](https://robo.li) task that records test runtimes and lets you split tests into equal runtime-based groups for parallel runs.
+
+This can be hugely useful when running your tests in an automated fashion, such as in a Continuous Integration system. You can schedule multiple parallel test runs, each with roughly-equal runtimes.
 
 # Usage
 First, install this package:
@@ -17,6 +19,8 @@ extensions:
         - ChinthakaGodawita\CodeceptionTimekeeper\Reporter:
               report_location: _data/time_report.json
 ```
+
+Then run your tests, a report with runtimes for each test will be output to `_data/time_report.json`. This isn't much use on its own, read on for how you can use this to run your tests in parallel.
 
 ## Parallel test runs via Robo
 
@@ -47,9 +51,35 @@ class RoboFile extends \Robo\Tasks {
 }
 ```
 
+Then update your `codeception.yml` file with:
+```yaml
+groups:
+  timekeeper_*: tests/_data/timekeeper/group_*
+```
+
+This tells Codeception about the existence of the test groups we've just created.
+
+You'll be able to split tests using:
+```shell script
+php vendor/bin/robo split:tests
+```
+
+And run these test groups using:
+```shell script
+php vendor/bin/codecept run -g timekeeper_0
+php vendor/bin/codecept run -g timekeeper_1
+php vendor/bin/codecept run -g timekeeper_2
+# etc.
+```
+
+See [the Codeception documentation](https://codeception.com/docs/07-AdvancedUsage#group-files) for more information.
+
 # Troubleshooting
 
-### Help! I'm seeing PHP compatibility errors
+### Some of my tests depend on each other
+This extension does not _currently_ support tests with dependencies. [Support for this is coming soon](https://github.com/chinthakagodawita/codeception-timekeeper/issues/2).
+
+### Help! I'm seeing strange PHP compatibility errors
 If you're seeing errors similar to any of the below, then you've hit a variation of [codeception/codeception#5031](https://github.com/Codeception/Codeception/issues/5031)
 * ```ERROR: Declaration of Codeception\Test\Test::run(?PHPUnit\Framework\TestResult $result = NULL) must be compatible with PHPUnit\Framework\Test::run(?PHPUnit\Framework\TestResult $result = NULL): PHPUnit\Framework\TestResult```
 * ```PHP Fatal error:  Declaration of Codeception\Test\Test::toString() must be compatible with PHPUnit\Framework\SelfDescribing::toString(): string```
