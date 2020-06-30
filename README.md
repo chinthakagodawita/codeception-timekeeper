@@ -2,8 +2,6 @@
 
 A [Codeception](https://codeception.com/) extension & [Robo](https://robo.li) task that records test runtimes and lets you split tests into equal runtime-based groups for parallel runs
 
-**Coming soon**
-
 # Usage
 First, install this package:
 ```bash
@@ -67,7 +65,7 @@ require_once 'vendor/autoload.php';
 require_once 'vendor/codeception/codeception/autoload.php';
 ```
 
-Update these paths depending on where your `Robofile` lives, in relation to Composer's `vendor` directory.
+Update these paths depending on where your `Robofile` lives in relation to Composer's `vendor` directory.
 
 This forces Codeception's autoloader to fire and redeclare the PHPUnit classes that it needs to function.
 

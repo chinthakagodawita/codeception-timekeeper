@@ -3,12 +3,9 @@ declare(strict_types=1);
 
 namespace ChinthakaGodawita\CodeceptionTimekeeper;
 
-use Codeception\Test\Descriptor as TestDescriptor;
 use Codeception\Test\Loader;
-use Codeception\TestInterface;
 use Generator;
 use PHPUnit\Framework\DataProviderTestSuite;
-use PHPUnit\Framework\SelfDescribing;
 use Robo\Exception\TaskException;
 use Robo\Result;
 use Robo\Task\BaseTask;
@@ -33,7 +30,7 @@ class TimeSplitterTask extends BaseTask
     /**
      * @var string The filename pattern under which groups will be saved.
      */
-    private $groupOutputLoc = 'tests/_data/timekeeper/group_';
+    private $groupOutputLoc = '_data/timekeeper/group_';
 
     /**
      * @var string The directory that holds test files.
@@ -71,7 +68,16 @@ class TimeSplitterTask extends BaseTask
         $tests = $testLoader->getTests();
         $testCount = count($tests);
 
-        $this->printTaskInfo("Splitting {$testCount} into {$this->groupCount} groups of equal runtime...");
+        if ($this->groupCount > $testCount) {
+            return Result::error(
+                $this,
+                "Provided group count ({$this->groupCount}) is more than the number of tests ({$testCount})!"
+            );
+        }
+
+        $this->printTaskInfo(
+            "Splitting {$testCount} tests into {$this->groupCount} groups of equal runtime..."
+        );
 
         $timeReport = null;
         try {
@@ -107,9 +113,14 @@ class TimeSplitterTask extends BaseTask
             }
         }
 
-        foreach ($groups as $idx => $tests) {
-            $fileName = $this->groupOutputLoc . $idx;
-            $this->printTaskInfo("Writing group {$idx} to: $fileName");
+        $groupIdx = null;
+        foreach ($groups as $groupIdx => $tests) {
+            if (\count($tests) === 0) {
+                break;
+            }
+
+            $fileName = $this->groupOutputLoc . $groupIdx;
+            $this->printTaskInfo("Writing group {$groupIdx} to: $fileName");
             $success = file_put_contents($fileName, implode("\n", $tests));
             if (!$success) {
                 throw new TaskException(
@@ -119,15 +130,62 @@ class TimeSplitterTask extends BaseTask
             }
         }
 
-        return Result::success($this, "{$this->groupCount} test groups created");
+        if ($groupIdx === null) {
+            $this->printTaskWarning('No test groups were created');
+        } else {
+            $groupCount = $groupIdx + 1;
+            $this->printTaskInfo("{$groupCount} test groups created");
+        }
+
+        return Result::success($this);
     }
 
+    /**
+     * Splits tests into equal groups, ignoring test runtimes.
+     *
+     * @param Generator|Test[] $tests
+     *
+     * @return array
+     */
     private function splitTestsByGroup(Generator $tests): array
     {
-        // @TODO.
-        return [];
+        $groups = array_fill(0, $this->groupCount, []);
+        $skippedTests = [];
+
+        $groupIdx = 0;
+        foreach ($tests as $test) {
+            $testPath = $test->path();
+
+            if ($test->isSkipped()) {
+                $skippedTests[] = $testPath;
+            } else {
+                $groups[$groupIdx][] = $testPath;
+            }
+
+            $groupIdx++;
+            if ($groupIdx === $this->groupCount) {
+                $groupIdx = 0;
+            }
+        }
+
+        // Add skipped tests onto the last group as they take relatively no time
+        // to run.
+        $maxGroupIdx = $this->groupCount - 1;
+        if (count($skippedTests) > 0) {
+            $groups[$maxGroupIdx] = array_merge($groups[$maxGroupIdx], $skippedTests);
+        }
+
+        return $groups;
     }
 
+    /**
+     * Splits tests into groups of _roughly_ equal runtimes.
+     *
+     * @param Generator|Test[] $tests
+     * @param TimeReport $timeReport
+     *
+     * @return array
+     */
     private function splitTestsByRuntime(Generator $tests, TimeReport $timeReport): array
     {
         $skippedTests = [];
@@ -135,11 +193,10 @@ class TimeSplitterTask extends BaseTask
         $testsWithoutRuntime = [];
 
         foreach ($tests as $test) {
-            $testMeta = $test->getMetadata();
-            $testPath = $this->getTestRelativePath($test);
+            $testPath = $test->path();
             $runtime = $timeReport->getTime($testPath);
 
-            if ($testMeta->getSkip() !== null) {
+            if ($test->isSkipped()) {
                 $skippedTests[] = $testPath;
             } elseif ($runtime === null) {
                 $testsWithoutRuntime[] = $testPath;
@@ -155,18 +212,10 @@ class TimeSplitterTask extends BaseTask
         $sums = array_fill(0, $this->groupCount, 0);
         $groups = array_fill(0, $this->groupCount, []);
 
-        $maxLoops = 3 * $this->groupCount;
         foreach ($testsWithRuntime as $testPath => $runtime) {
             $idx = 0;
             $loops = 0;
             while(true) {
-                if ($loops > $maxLoops) {
-                    throw new TaskException(
-                        $this,
-                        "Max loop count ({$maxLoops}) reached."
-                    );
-                }
-
                 $sum = $sums[$idx];
                 $prevIdx = $idx - 1;
                 if ($prevIdx < 0) {
@@ -176,13 +225,12 @@ class TimeSplitterTask extends BaseTask
                 if ($nextIdx === $this->groupCount) {
                     $nextIdx = 0;
                 }
-                if ($sum === 0 || ($sum < $sums[$prevIdx] && $sum < $sums[$nextIdx])) {
+                if ($sum === 0 || (($sum < $sums[$prevIdx] && $sum < $sums[$nextIdx]))) {
                     $sums[$idx] += $runtime;
                     $groups[$idx][] = $testPath;
                     break;
                 }
                 $idx++;
-                $loops++;
             }
         }
 
@@ -210,7 +258,7 @@ class TimeSplitterTask extends BaseTask
     /**
      * @param array $tests
      *
-     * @return Generator|TestInterface[]
+     * @return Generator|Test[]
      */
     private function testIterator(array $tests): Generator
     {
@@ -219,29 +267,8 @@ class TimeSplitterTask extends BaseTask
                 $test = current($test->tests());
             }
 
-            yield $test;
+            yield new Test($test);
         }
-    }
-
-    /**
-     * Get the path to a particular test, relative to the Robofile.
-     *
-     * @param SelfDescribing $test
-     *
-     * @return string
-     */
-    private function getTestRelativePath(SelfDescribing $test): string
-    {
-        $path = DIRECTORY_SEPARATOR . TestDescriptor::getTestFullName($test);
-        // Robo updates PHP's current working directory to the location of the
-        // Robofile.
-        $currentDir = getcwd() . DIRECTORY_SEPARATOR;
-
-        if (strpos($path, $currentDir) === 0) {
-            $path = substr($path, strlen($currentDir));
-        }
-
-        return $path;
     }
 
 }
