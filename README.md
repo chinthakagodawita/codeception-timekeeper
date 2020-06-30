@@ -35,10 +35,9 @@ class RoboFile extends \Robo\Tasks {
 
     public function taskSplitTests(): \Robo\Result
     {
-        return $this->taskSplitTestsByTime(
-          3,
-          '_data/time_report.json'
-        )
+        $groups = 3;
+        $timeReportLocation = '_data/time_report.json';
+        return $this->taskSplitTestsByTime($groups, $timeReportLocation)
           ->projectRoot('.')
           ->testsFrom('tests')
           ->groupsTo('tests/_data/timekeeper/group_')

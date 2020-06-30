@@ -30,7 +30,7 @@ class TimeSplitterTask extends BaseTask
     /**
      * @var string The filename pattern under which groups will be saved.
      */
-    private $groupOutputLoc = '_data/timekeeper/group_';
+    private $groupOutputLoc = 'tests/_data/timekeeper/group_';
 
     /**
      * @var string The directory that holds test files.
