@@ -1,7 +1,9 @@
 {
     "name": "chinthakagodawita/codeception-timekeeper",
-    "description": "A Codeception extension & Robo task that records test runtimes and lets you split tests into equal runtime-based groups for parallel runs",
     "type": "library",
+    "description": "A Codeception extension & Robo task that records test runtimes and lets you split tests into equal runtime-based groups for parallel runs",
+    "keywords": ["codeception", "robo"],
+    "homepage": "https://github.com/chinthakagodawita/codeception-timekeeper",
     "license": "MIT",
     "authors": [
         {
