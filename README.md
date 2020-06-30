@@ -86,7 +86,6 @@ This extension does not _currently_ support tests with dependencies. [Support fo
 ### Help! I'm seeing strange PHP compatibility errors
 If you're seeing errors similar to any of the below, then you've hit a variation of [codeception/codeception#5031](https://github.com/Codeception/Codeception/issues/5031)
 * ```ERROR: Declaration of Codeception\Test\Test::run(?PHPUnit\Framework\TestResult $result = NULL) must be compatible with PHPUnit\Framework\Test::run(?PHPUnit\Framework\TestResult $result = NULL): PHPUnit\Framework\TestResult```
-* ```PHP Fatal error:  Declaration of Codeception\Test\Test::toString() must be compatible with PHPUnit\Framework\SelfDescribing::toString(): string```
 * ```ERROR: Declaration of Codeception\Test\Test::toString() must be compatible with PHPUnit\Framework\SelfDescribing::toString(): string```
 
 The simplest way to fix this, [till a real fix lands upstream](https://github.com/Codeception/Codeception/pull/5894), is to add the following to the very top of your `Robofile` instead of just relying on Composer's autoloader:
