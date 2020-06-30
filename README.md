@@ -4,6 +4,10 @@ A [Codeception](https://codeception.com/) extension & [Robo](https://robo.li) ta
 
 This can be hugely useful when running your tests in an automated fashion, such as in a Continuous Integration system. You can schedule multiple parallel test runs, each with roughly-equal runtimes.
 
+This extension supports the following Codeception version:
+* 3.x
+* 4.x
+
 # Usage
 First, install this package:
 ```bash
