@@ -114,11 +114,12 @@ class TimeSplitterTask extends BaseTask
         }
 
         $groupIdx = null;
-        foreach ($groups as $groupIdx => $tests) {
+        foreach ($groups as $idx => $tests) {
             if (\count($tests) === 0) {
                 break;
             }
 
+            $groupIdx = $idx + 1;
             $fileName = $this->groupOutputLoc . $groupIdx;
             $this->printTaskInfo("Writing group {$groupIdx} to: $fileName");
             $success = file_put_contents($fileName, implode("\n", $tests));
